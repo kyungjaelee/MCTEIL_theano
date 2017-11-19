@@ -1,0 +1,88 @@
+tasks:    
+  - name: hopper
+    env: Hopper-v1
+    policy: expert_policies/modern/log_Hopper-v0_3.h5/snapshots/iter0000500
+    data_subsamp_freq: 20
+    cuts_off_on_success: false
+    
+training:
+  full_dataset_num_trajs: 50
+  dataset_num_trajs: [4, 11, 18, 25]
+  deterministic_expert: false
+  runs: 1
+
+  algorithms:
+
+    - name: ga_mixture_0
+      cmd: >
+        --mode ga
+        --env {env}
+        --data {dataset}
+        --limit_trajs {num_trajs}
+        --data_subsamp_freq {data_subsamp_freq}
+        --favor_zero_expert_reward {cuts_off_on_success}
+        --min_total_sa 50000
+        --max_iter 201
+        --reward_include_time 0
+        --reward_lr .01
+        --log {out}
+        --policy_type GaussianMixture
+
+    - name: ga_mixture_1
+      cmd: >
+        --mode ga
+        --env {env}
+        --data {dataset}
+        --limit_trajs {num_trajs}
+        --data_subsamp_freq {data_subsamp_freq}
+        --favor_zero_expert_reward {cuts_off_on_success}
+        --min_total_sa 50000
+        --max_iter 201
+        --reward_include_time 0
+        --reward_lr .01
+        --log {out}
+        --policy_type GaussianMixture
+        --policy_ent_reg 1.
+
+    - name: ga
+      cmd: >
+        --mode ga
+        --env {env}
+        --data {dataset}
+        --limit_trajs {num_trajs}
+        --data_subsamp_freq {data_subsamp_freq}
+        --favor_zero_expert_reward {cuts_off_on_success}
+        --min_total_sa 50000
+        --max_iter 201
+        --reward_include_time 0
+        --reward_lr .01
+        --log {out}
+        --policy_type Gaussian
+
+#    - name: ga_sparse_mixture
+#      cmd: >
+#        --mode ga
+#        --env {env}
+#        --data {dataset}
+#        --limit_trajs {num_trajs}
+#        --data_subsamp_freq {data_subsamp_freq}
+#        --favor_zero_expert_reward {cuts_off_on_success}
+#        --min_total_sa 50000
+#        --max_iter 501
+#        --reward_include_time 0
+#        --reward_lr .01
+#        --log {out}
+#        --policy_type GaussianSparseMixture
+
+options:
+  storagedir: imitation_runs/test
+  traj_subdir: trajs
+  checkpt_subdir: checkpoints_all
+
+  eval_num_trajs: 50
+  results_filename: results.h5
+
+  pbs:
+    jobname: im_modern
+    queue: atlas
+    ppn: 12

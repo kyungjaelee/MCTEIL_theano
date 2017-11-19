@@ -1,0 +1,81 @@
+### Imitation pipeline for classic control tasks ###
+
+tasks:
+  - name: cartpole
+    env: CartPole-v0
+    policy: expert_policies/classic/CartPole-v0.h5/snapshots/iter0000100
+    cuts_off_on_success: false
+    data_subsamp_freq: 10
+
+  - name: mountaincar
+    env: MountainCar-v0
+    policy: expert_policies/classic/MountainCar-v0.h5/snapshots/iter0000100
+    cuts_off_on_success: true
+    data_subsamp_freq: 5
+
+training:
+  full_dataset_num_trajs: 10
+  dataset_num_trajs: [1, 4, 7, 10]
+  deterministic_expert: false
+  runs: 4
+
+  algorithms:
+    # Behavioral cloning
+    - name: bclone_gibbs
+      cmd: >
+        --mode bclone
+        --env {env}
+        --data {dataset}
+        --limit_trajs {num_trajs}
+        --data_subsamp_freq {data_subsamp_freq}
+        --max_iter 1001
+        --bclone_eval_freq 100
+        --sim_batch_size 1
+        --policy_type Gibbs
+        --log {out}
+    
+    - name: ga_sparse_1
+      cmd: >
+        --mode ga
+        --env {env}
+        --data {dataset}
+        --limit_trajs {num_trajs}
+        --data_subsamp_freq {data_subsamp_freq}
+        --favor_zero_expert_reward {cuts_off_on_success}
+        --min_total_sa 5000
+        --max_iter 301
+        --sim_batch_size 1
+        --reward_include_time 0
+        --policy_type Sparse
+        --log {out}
+        --policy_ent_reg .1
+        
+    # Generative adversarial (neural network adversary)
+    - name: ga_gibbs_1
+      cmd: >
+        --mode ga
+        --env {env}
+        --data {dataset}
+        --limit_trajs {num_trajs}
+        --data_subsamp_freq {data_subsamp_freq}
+        --favor_zero_expert_reward {cuts_off_on_success}
+        --min_total_sa 5000
+        --max_iter 301
+        --sim_batch_size 1
+        --reward_include_time 0
+        --policy_type Gibbs
+        --log {out}
+        --policy_ent_reg .1
+
+options:
+  storagedir: imitation_runs/classic_ent1
+  traj_subdir: trajs
+  checkpt_subdir: checkpoints
+
+  eval_num_trajs: 50
+  results_filename: results.h5
+
+  pbs:
+    jobname: im_classic
+    queue: atlas
+    ppn: 2
