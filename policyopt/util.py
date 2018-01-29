@@ -71,6 +71,8 @@ def gaussian_kl(means1_N_D, stdevs1_N_D, means2_N_D, stdevs2_N_D):
         np.square((means2_N_D-means1_N_D)/stdevs2_N_D).sum(axis=1) +
         2.*(np.log(stdevs2_N_D).sum(axis=1) - np.log(stdevs1_N_D).sum(axis=1)) - D
     )
+def sparse_mixture_gaussian_entropy(weights_B_Da, stdevs_B_Da):
+    return categorical_sparse_entropy(weights_B_Da) + np.sum(weights_B_Da*gaussian_entropy(stdevs_B_Da),axis=1)
 
 def mixture_gaussian_entropy(weights_B_Da, stdevs_B_Da):
     return categorical_entropy(weights_B_Da) + np.sum(weights_B_Da*gaussian_entropy(stdevs_B_Da),axis=1)
@@ -78,6 +80,11 @@ def mixture_gaussian_entropy(weights_B_Da, stdevs_B_Da):
 def gaussian_entropy(stdevs_N_D):
     d = stdevs_N_D.shape[1]
     return .5*d*(1. + np.log(2.*np.pi)) + np.log(stdevs_N_D).sum(axis=1)
+
+def categorical_sparse_entropy(probs_N_K):
+    tmp = 0.5*probs_N_K * (1 - probs_N_K)
+    tmp[~np.isfinite(tmp)] = 0
+    return tmp.sum(axis=1)
 
 def categorical_entropy(probs_N_K):
     tmp = -probs_N_K * np.log(probs_N_K + 1e-10)

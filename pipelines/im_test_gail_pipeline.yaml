@@ -13,7 +13,7 @@ training:
 
   algorithms:
 
-    - name: ga_mixture_0
+    - name: ga_sparse_mixture_1
       cmd: >
         --mode ga
         --env {env}
@@ -22,11 +22,13 @@ training:
         --data_subsamp_freq {data_subsamp_freq}
         --favor_zero_expert_reward {cuts_off_on_success}
         --min_total_sa 50000
-        --max_iter 201
+        --max_iter 11
         --reward_include_time 0
         --reward_lr .01
         --log {out}
-        --policy_type GaussianMixture
+        --policy_type GaussianSparseMixture
+        --policy_ent_reg 1.
+        --n_mixture 3
 
     - name: ga_mixture_1
       cmd: >
@@ -37,12 +39,13 @@ training:
         --data_subsamp_freq {data_subsamp_freq}
         --favor_zero_expert_reward {cuts_off_on_success}
         --min_total_sa 50000
-        --max_iter 201
+        --max_iter 11
         --reward_include_time 0
         --reward_lr .01
         --log {out}
         --policy_type GaussianMixture
         --policy_ent_reg 1.
+        --n_mixture 5
 
     - name: ga
       cmd: >

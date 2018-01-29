@@ -49,7 +49,11 @@ class SparsemaxDistGrad(gof.Op):
         output_storage[0][0] = dx
 
     def grad(self, inputs, output_grads):
-        return 0
+        dy, sm =inputs
+        gdy = T.zeros_like(dy)
+        gsm = T.zeros_like(sm)
+
+        return [gdy, gsm]
 sparsemaxdistgrad = SparsemaxDistGrad()
 
 class SparsemaxDist(gof.Op):

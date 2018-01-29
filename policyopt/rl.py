@@ -101,7 +101,7 @@ class Policy(nn.Model):
     def _compute_actiondist_entropy(self, actiondist_B_Pa): pass
 
 SparseMixtureGaussianPolicyConfig = namedtuple('SparseMixtureGaussianPolicyConfig', 'hidden_spec, min_stdev, init_logstdev, enable_obsnorm')
-class MixtureGaussianPolicy(Policy):
+class SparseMixtureGaussianPolicy(Policy):
     def __init__(self, cfg, obsfeat_space, action_space, varscope_name, n_mixture=3):
         assert isinstance(cfg, SparseMixtureGaussianPolicyConfig)
         assert isinstance(obsfeat_space, ContinuousSpace) and isinstance(action_space, ContinuousSpace)

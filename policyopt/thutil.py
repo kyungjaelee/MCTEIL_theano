@@ -14,7 +14,8 @@ def flatgrad(loss, vars_):
     return flatcat(tensor.grad(loss, vars_))
 
 def mixture_gaussian_kl_upbnd(means1_N_D, stdevs1_N_D, mixture1_N_D, means2_N_D, stdevs2_N_D, mixture2_N_D):
-    return tensor.sum(mixture1_N_D*(tensor.log(mixture1_N_D/mixture2_N_D) + gaussian_kl(means1_N_D, stdevs1_N_D, means2_N_D, stdevs2_N_D)),axis=1)
+    small_num = tensor.constant(1e-10)
+    return tensor.sum(mixture1_N_D*(tensor.log((mixture1_N_D+small_num)/(mixture2_N_D+small_num)) + gaussian_kl(means1_N_D, stdevs1_N_D, means2_N_D, stdevs2_N_D)),axis=1)
 
 def gaussian_kl(means1_N_D, stdevs1_N_D, means2_N_D, stdevs2_N_D):
     '''
@@ -29,11 +30,12 @@ def gaussian_kl(means1_N_D, stdevs1_N_D, means2_N_D, stdevs2_N_D):
         ))
 
 def mixture_gaussian_log_density(means_N_D, stdevs_N_D, mixture_N_D, x_N_D):
+    small_num = tensor.constant(1e-10)
     D = tensor.shape(means_N_D)[1]
     lognormconsts_B = -.5 * (
     D * np.log(2. * np.pi) + 2. * tensor.log(stdevs_N_D).sum(axis=1))  # log normalization constants
     logprobs_B = -.5 * tensor.sqr((x_N_D.dimshuffle(0,1,'x') - means_N_D) / stdevs_N_D).sum(axis=1) + lognormconsts_B
-    exponent = logprobs_B + tensor.log(mixture_N_D)
+    exponent = logprobs_B + tensor.log(mixture_N_D + small_num)
     max_exponent = tensor.max(exponent,axis=1)
 
     return max_exponent + tensor.log(tensor.sum(tensor.exp(exponent-tensor.max(exponent,axis=1,keepdims=True)),axis=1))
