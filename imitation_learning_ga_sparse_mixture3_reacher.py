@@ -107,6 +107,7 @@ def main(cmd):
     parser.add_argument('--vf_max_kl', type=float, default=.01)
     parser.add_argument('--vf_cg_damping', type=float, default=.1)
     parser.add_argument('--policy_ent_reg', type=float, default=0.)
+    parser.add_argument('--policy_ent_reg_type', type=str, default='logprobs')
     parser.add_argument('--reward_type', type=str, default='nn')
     # parser.add_argument('--linear_reward_bin_features', type=int, default=0)
     parser.add_argument('--reward_max_kl', type=float, default=.01)
@@ -261,6 +262,7 @@ def main(cmd):
             policy_obsfeat_fn=lambda obs: obs,
             reward_obsfeat_fn=lambda obs: obs,
             policy_ent_reg=args.policy_ent_reg,
+            policy_ent_reg_type=args.policy_ent_reg_type,
             ex_obs=exobs_Bstacked_Do,
             ex_a=exa_Bstacked_Da,
             ex_t=ext_Bstacked)

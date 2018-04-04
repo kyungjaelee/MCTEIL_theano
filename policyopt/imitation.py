@@ -411,7 +411,7 @@ class LinearReward(object):
 
 
 class ImitationOptimizer(object):
-    def __init__(self, mdp, discount, lam, policy, sim_cfg, step_func, reward_func, value_func, policy_obsfeat_fn, reward_obsfeat_fn, policy_ent_reg, ex_obs, ex_a, ex_t):
+    def __init__(self, mdp, discount, lam, policy, sim_cfg, step_func, reward_func, value_func, policy_obsfeat_fn, reward_obsfeat_fn, policy_ent_reg, policy_ent_reg_type, ex_obs, ex_a, ex_t):
         self.mdp, self.discount, self.lam, self.policy = mdp, discount, lam, policy
         self.sim_cfg = sim_cfg
         self.step_func = step_func
@@ -421,6 +421,7 @@ class ImitationOptimizer(object):
         self.policy_obsfeat_fn = policy_obsfeat_fn
         self.reward_obsfeat_fn = reward_obsfeat_fn
         self.policy_ent_reg = policy_ent_reg
+        self.policy_ent_reg_type = policy_ent_reg_type
         util.header('Policy entropy regularization: {}'.format(self.policy_ent_reg))
 
         assert ex_obs.ndim == ex_a.ndim == 2 and ex_t.ndim == 1 and ex_obs.shape[0] == ex_a.shape[0] == ex_t.shape[0]
@@ -461,9 +462,14 @@ class ImitationOptimizer(object):
                 if self.policy_ent_reg is not None and self.policy_ent_reg != 0:
                     assert self.policy_ent_reg > 0
                     # XXX probably faster to compute this from sampbatch.adist instead
-                    actionlogprobs_B = self.policy.compute_action_logprobs(samp_pobsfeat.stacked, sampbatch.a.stacked)
-                    policyentbonus_B = -self.policy_ent_reg * actionlogprobs_B
-                    rcurr_stacked += policyentbonus_B
+                    if self.policy_ent_reg_type == "logprobs":
+                        actionlogprobs_B = self.policy.compute_action_logprobs(samp_pobsfeat.stacked, sampbatch.a.stacked)
+                        policyentbonus_B = -self.policy_ent_reg * actionlogprobs_B
+                        rcurr_stacked += policyentbonus_B
+                    elif self.policy_ent_reg_type == "ent":
+                        actionentropy_B = self.policy.compute_action_entropy(samp_pobsfeat.stacked)
+                        policyentbonus_B = -self.policy_ent_reg * actionentropy_B
+                        rcurr_stacked += policyentbonus_B
                 else:
                     policyentbonus_B = np.zeros_like(rcurr_stacked)
 

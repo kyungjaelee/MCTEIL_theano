@@ -54,6 +54,7 @@ class Policy(nn.Model):
         # TRPO step
         self._ngstep = optim.make_ngstep_func(self, compute_obj_kl, compute_obj_kl_with_grad, compute_hvp)
 
+        entropy = self._make_actiondist_ent_ops(actiondist_B_Pa)
         ##### Publicly-exposed functions #####
         # for debugging
         self.compute_internal_normalized_obsfeat = thutil.function([obsfeat_B_Df], normalized_obsfeat_B_Df)
@@ -71,10 +72,12 @@ class Policy(nn.Model):
         self.compute_bclone_loss = thutil.function(
             [obsfeat_B_Df, input_actions_B_Da],
             bclone_loss)
-
         self.compute_action_logprobs = thutil.function(
             [obsfeat_B_Df, input_actions_B_Da],
             logprobs_B)
+        self.compute_action_entropy = thutil.function(
+            [obsfeat_B_Df],
+            entropy)
 
     @property
     def varscope(self): return self.__varscope
@@ -95,6 +98,8 @@ class Policy(nn.Model):
     def _make_actiondist_logprob_ops(self, actiondist_B_Pa, input_actions_B_Da): pass
     @abstractmethod
     def _make_actiondist_kl_ops(self, proposal_actiondist_B_Pa, actiondist_B_Pa): pass
+    @abstractmethod
+    def _make_actiondist_ent_ops(self, actiondist_B_Pa): pass
     @abstractmethod
     def _sample_from_actiondist(self, actiondist_B_Pa, deterministic): pass
     @abstractmethod
@@ -155,7 +160,11 @@ class SparseMixtureGaussianPolicy(Policy):
         proposal_means_B_Da, proposal_weights_B_Da, proposal_stdevs_B_Da = self._extract_actiondist_params(proposal_actiondist_B_Pa)
         means_B_Da, weights_B_Da, stdevs_B_Da = self._extract_actiondist_params(actiondist_B_Pa)
         # return thutil.gaussian_kl(proposal_means_B_Da[:,:,0], proposal_stdevs_B_Da[:,:,0], means_B_Da[:,:,0], stdevs_B_Da[:,:,0])
-        return thutil.mixture_gaussian_kl_upbnd(proposal_means_B_Da, proposal_stdevs_B_Da, proposal_weights_B_Da, means_B_Da, stdevs_B_Da, weights_B_Da)
+        return thutil.mixture_gaussian_tsallis_dist(proposal_means_B_Da, proposal_stdevs_B_Da, proposal_weights_B_Da, means_B_Da, stdevs_B_Da, weights_B_Da,self.n_mixture)
+
+    def _make_actiondist_ent_ops(self, actiondist_B_Pa):
+        means_B_Da, weights_B_Da, stdevs_B_Da = self._extract_actiondist_params(actiondist_B_Pa)
+        return thutil.mixture_gaussian_tsallis_ent(means_B_Da, stdevs_B_Da, weights_B_Da, self.n_mixture)
 
     def _sample_from_actiondist(self, actiondist_B_Pa, deterministic):
         batch_size = actiondist_B_Pa.shape[0]
@@ -244,6 +253,10 @@ class MixtureGaussianPolicy(Policy):
         # return thutil.gaussian_kl(proposal_means_B_Da[:,:,0], proposal_stdevs_B_Da[:,:,0], means_B_Da[:,:,0], stdevs_B_Da[:,:,0])
         return thutil.mixture_gaussian_kl_upbnd(proposal_means_B_Da, proposal_stdevs_B_Da, proposal_weights_B_Da, means_B_Da, stdevs_B_Da, weights_B_Da)
 
+    def _make_actiondist_ent_ops(self, actiondist_B_Pa):
+        means_B_Da, weights_B_Da, stdevs_B_Da = self._extract_actiondist_params(actiondist_B_Pa)
+        return thutil.mixture_gaussian_ent_upbnd(means_B_Da, stdevs_B_Da, weights_B_Da)
+
     def _sample_from_actiondist(self, actiondist_B_Pa, deterministic):
         batch_size = actiondist_B_Pa.shape[0]
         adim = self.action_space.dim
@@ -289,7 +302,6 @@ class GaussianPolicy(Policy):
             enable_obsnorm=cfg.enable_obsnorm,
             varscope_name=varscope_name)
 
-
     def _make_actiondist_ops(self, obsfeat_B_Df):
         # Computes action distribution mean (of a Gaussian) using MLP
         with nn.variable_scope('hidden'):
@@ -321,6 +333,10 @@ class GaussianPolicy(Policy):
         proposal_means_B_Da, proposal_stdevs_B_Da = self._extract_actiondist_params(proposal_actiondist_B_Pa)
         means_B_Da, stdevs_B_Da = self._extract_actiondist_params(actiondist_B_Pa)
         return thutil.gaussian_kl(proposal_means_B_Da, proposal_stdevs_B_Da, means_B_Da, stdevs_B_Da)
+
+    def _make_actiondist_ent_ops(self, actiondist_B_Pa):
+        _, stdevs_B_Da = self._extract_actiondist_params(actiondist_B_Pa)
+        return thutil.gaussian_ent(stdevs_B_Da)
 
     def _sample_from_actiondist(self, actiondist_B_Pa, deterministic):
         adim = self.action_space.dim
@@ -375,6 +391,9 @@ class GibbsPolicy(Policy):
     def _make_actiondist_kl_ops(self, proposal_actiondist_B_Pa, actiondist_B_Pa):
         return thutil.categorical_kl(proposal_actiondist_B_Pa, actiondist_B_Pa)
 
+    def _make_actiondist_ent_ops(self, actiondist_B_Pa):
+        return thutil.categorical_ent( actiondist_B_Pa)
+
     def _sample_from_actiondist(self, actiondist_B_Pa, deterministic):
         probs_B_A = np.exp(actiondist_B_Pa); assert probs_B_A.shape[1] == self.action_space.size
         if deterministic:
@@ -419,6 +438,9 @@ class SparsePolicy(Policy):
     def _make_actiondist_kl_ops(self, proposal_actiondist_B_Pa, actiondist_B_Pa):
         return thutil.categorical_kl(proposal_actiondist_B_Pa, actiondist_B_Pa)
         #return self.scale*thutil.categorical_sparse_kl(proposal_actiondist_B_Pa, actiondist_B_Pa)
+
+    def _make_actiondist_ent_ops(self, actiondist_B_Pa):
+        return thutil.categorical_tsallis_ent( actiondist_B_Pa)
 
     def _sample_from_actiondist(self, actiondist_B_Pa, deterministic):
         probs_B_A = np.zeros_like(actiondist_B_Pa)
