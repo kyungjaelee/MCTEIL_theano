@@ -1,21 +1,10 @@
 tasks:    
-#  - name: hopper
-#    env: Hopper-v1
-#    policy: expert_policies/modern/log_Hopper-v0_3.h5/snapshots/iter0000500
-#    data_subsamp_freq: 20
-#    cuts_off_on_success: false
-    
+
   - name: ant
     env: Ant-v1
     policy: expert_policies/modern/log_Ant-v1_0.h5/snapshots/iter0000500
     data_subsamp_freq: 20
     cuts_off_on_success: false
-    
-#  - name: halfcheetah
-#    env: HalfCheetah-v1
-#    policy: expert_policies/modern/log_HalfCheetah-v0_2.h5/snapshots/iter0000500
-#    data_subsamp_freq: 20
-#    cuts_off_on_success: false
     
 training:
   full_dataset_num_trajs: 50
@@ -25,7 +14,7 @@ training:
 
   algorithms:
 
-    - name: ga_mixture_0_3
+    - name: ga_mixture_000001_3
       cmd: >
         --mode ga
         --env {env}
@@ -34,15 +23,16 @@ training:
         --data_subsamp_freq {data_subsamp_freq}
         --favor_zero_expert_reward {cuts_off_on_success}
         --min_total_sa 50000
-        --max_iter 601
+        --max_iter 1001
         --reward_include_time 0
         --reward_lr .01
         --log {out}
         --policy_type GaussianMixture
-        --policy_ent_reg 0.
+        --policy_ent_reg 0.00001
+        --policy_ent_reg_type ent
         --n_mixture 3
 
-    - name: ga_mixture_01_3
+    - name: ga_mixture_0000001_3
       cmd: >
         --mode ga
         --env {env}
@@ -51,77 +41,32 @@ training:
         --data_subsamp_freq {data_subsamp_freq}
         --favor_zero_expert_reward {cuts_off_on_success}
         --min_total_sa 50000
-        --max_iter 601
+        --max_iter 1001
         --reward_include_time 0
         --reward_lr .01
         --log {out}
         --policy_type GaussianMixture
-        --policy_ent_reg 0.1
+        --policy_ent_reg 0.000001
+        --policy_ent_reg_type ent
         --n_mixture 3
-        
-    - name: ga_mixture_001_3
-      cmd: >
-        --mode ga
-        --env {env}
-        --data {dataset}
-        --limit_trajs {num_trajs}
-        --data_subsamp_freq {data_subsamp_freq}
-        --favor_zero_expert_reward {cuts_off_on_success}
-        --min_total_sa 50000
-        --max_iter 601
-        --reward_include_time 0
-        --reward_lr .01
-        --log {out}
-        --policy_type GaussianMixture
-        --policy_ent_reg 0.01
-        --n_mixture 3
-                
-#    - name: ga_sparse_mixture_1
-#      cmd: >
-#        --mode ga
-#        --env {env}
-#        --data {dataset}
-#        --limit_trajs {num_trajs}
-#        --data_subsamp_freq {data_subsamp_freq}
-#        --favor_zero_expert_reward {cuts_off_on_success}
-#        --min_total_sa 50000
-#        --max_iter 11
-#        --reward_include_time 0
-#        --reward_lr .01
-#        --log {out}
-#        --policy_type GaussianSparseMixture
-#        --policy_ent_reg 1.
-#        --n_mixture 3
-        
-#    - name: ga
-#      cmd: >
-#        --mode ga
-#        --env {env}
-#        --data {dataset}
-#        --limit_trajs {num_trajs}
-#        --data_subsamp_freq {data_subsamp_freq}
-#        --favor_zero_expert_reward {cuts_off_on_success}
-#        --min_total_sa 50000
-#        --max_iter 201
-#        --reward_include_time 0
-#        --reward_lr .01
-#        --log {out}
-#        --policy_type Gaussian
 
-#    - name: ga_sparse_mixture
-#      cmd: >
-#        --mode ga
-#        --env {env}
-#        --data {dataset}
-#        --limit_trajs {num_trajs}
-#        --data_subsamp_freq {data_subsamp_freq}
-#        --favor_zero_expert_reward {cuts_off_on_success}
-#        --min_total_sa 50000
-#        --max_iter 501
-#        --reward_include_time 0
-#        --reward_lr .01
-#        --log {out}
-#        --policy_type GaussianSparseMixture
+    - name: ga_mixture_00000001_3
+      cmd: >
+        --mode ga
+        --env {env}
+        --data {dataset}
+        --limit_trajs {num_trajs}
+        --data_subsamp_freq {data_subsamp_freq}
+        --favor_zero_expert_reward {cuts_off_on_success}
+        --min_total_sa 50000
+        --max_iter 1001
+        --reward_include_time 0
+        --reward_lr .01
+        --log {out}
+        --policy_type GaussianMixture
+        --policy_ent_reg 0.0000001
+        --policy_ent_reg_type ent
+        --n_mixture 3
 
 options:
   storagedir: imitation_runs/test
@@ -129,9 +74,9 @@ options:
   checkpt_subdir: checkpoints_all
 
   eval_num_trajs: 50
-  results_filename: results.h5
+  results_filename: results_ga_mixture3_ant.h5
 
   pbs:
     jobname: im_modern
     queue: atlas
-    ppn: 12
+    ppn: 14
