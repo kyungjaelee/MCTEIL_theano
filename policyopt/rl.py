@@ -160,7 +160,9 @@ class SparseMixtureGaussianPolicy(Policy):
         proposal_means_B_Da, proposal_weights_B_Da, proposal_stdevs_B_Da = self._extract_actiondist_params(proposal_actiondist_B_Pa)
         means_B_Da, weights_B_Da, stdevs_B_Da = self._extract_actiondist_params(actiondist_B_Pa)
         # return thutil.gaussian_kl(proposal_means_B_Da[:,:,0], proposal_stdevs_B_Da[:,:,0], means_B_Da[:,:,0], stdevs_B_Da[:,:,0])
-        return thutil.mixture_gaussian_tsallis_dist(proposal_means_B_Da, proposal_stdevs_B_Da, proposal_weights_B_Da, means_B_Da, stdevs_B_Da, weights_B_Da,self.n_mixture)
+        # return thutil.mixture_gaussian_tsallis_dist(proposal_means_B_Da, proposal_stdevs_B_Da, proposal_weights_B_Da, means_B_Da, stdevs_B_Da, weights_B_Da,self.n_mixture)
+        return thutil.mixture_gaussian_kl_upbnd(proposal_means_B_Da, proposal_stdevs_B_Da, proposal_weights_B_Da,
+                                                means_B_Da, stdevs_B_Da, weights_B_Da)
 
     def _make_actiondist_ent_ops(self, actiondist_B_Pa):
         means_B_Da, weights_B_Da, stdevs_B_Da = self._extract_actiondist_params(actiondist_B_Pa)
